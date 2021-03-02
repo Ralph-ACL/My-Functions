@@ -1,0 +1,532 @@
+DECLARE @Start datetime = ''
+DECLARE @End datetime = rpt.ToUTC(dateadd(ms,-3,dateadd(d,1,'2020-12-13')))
+DECLARE @PmtWndwDays int = 280
+DECLARE @RefiPerfDays int = 90
+DECLARE @DaysOfPmts int = 180
+DECLARE @SSN uniqueidentifier = NULL -- '+81bN8a6KjIxmHooNxt3CujGF5SeRlhsaROEfnVTWVg='
+
+
+-- Locations
+IF OBJECT_ID('tempdb..#Locations','U') IS NOT NULL DROP TABLE #Locations
+SELECT	a.LocationID
+	, a.Number [LocNo]
+INTO	#Locations
+FROM	Locations a
+inner	join Companies b on b.CompanyID = a.CompanyID
+WHERE	b.TenantID in ('81C9D229-AE82-4264-AAE5-3617281F9733','A3A95638-F894-474B-9856-42F9A70D3BC4','8F336472-F93A-407D-ADB6-C2A2623B9621')
+CREATE UNIQUE CLUSTERED INDEX idx_LOC ON #Locations (LocationID,LocNo)
+
+/*Update on 2020-06-22 Half Year Cost*/
+IF OBJECT_ID('tempdb..#VC','U') IS NOT NULL DROP TABLE #VC
+SELECT	*
+INTO	#VC
+FROM	(
+	SELECT 0 [LocationNo], 0.00 [OrganicVC], 0.00 [LeadVC]
+	UNION ALL SELECT 2501, 32.2957389162562, 196.324131516582
+	UNION ALL SELECT 6007, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 6003, 22.8461939020212, 196.324131516582
+	UNION ALL SELECT 6008, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 6005, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 6002, 22.8461939020212, 196.324131516582
+	UNION ALL SELECT 6501, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 6006, 22.8461939020212, 196.324131516582
+	UNION ALL SELECT 6009, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 6001, 20.5170011025358, 196.324131516582
+	UNION ALL SELECT 501, 22.5728872918093, 195.622461265473
+	UNION ALL SELECT 4501, 48.4797735399285, 196.324131516582
+	UNION ALL SELECT 4005, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 2002, 17.5913862815884, 196.324131516582
+	UNION ALL SELECT 2006, 17.5913862815884, 196.324131516582
+	UNION ALL SELECT 2005, 17.5913862815884, 196.324131516582
+	UNION ALL SELECT 2004, 17.5913862815884, 196.324131516582
+	UNION ALL SELECT 2003, 17.5913862815884, 196.324131516582
+	UNION ALL SELECT 4001, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4009, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4003, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4002, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4008, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4004, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4006, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 4007, 22.5226711668274, 196.324131516582
+	UNION ALL SELECT 307, 15.8743417553191, 195.622461265473
+	UNION ALL SELECT 205, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 101, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 118, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 128, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 219, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 213, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 132, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 114, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 207, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 305, 15.8743417553191, 195.622461265473
+	UNION ALL SELECT 110, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 125, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 106, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 102, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 130, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 112, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 133, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 223, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 120, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 308, 15.8743417553191, 195.622461265473
+	UNION ALL SELECT 215, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 304, 15.8743417553191, 195.622461265473
+	UNION ALL SELECT 206, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 208, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 109, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 211, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 301, 15.8743417553191, 195.622461265473
+	UNION ALL SELECT 108, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 129, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 303, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 103, 20.7561845549738, 195.622461265473
+	UNION ALL SELECT 212, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 115, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 220, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 104, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 209, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 105, 19.1881137578999, 195.622461265473
+	UNION ALL SELECT 204, 21.2314823717949, 195.622461265473
+	UNION ALL SELECT 131, 22.7290493506494, 195.622461265473
+	UNION ALL SELECT 201, 19.7384897476341, 195.622461265473
+	UNION ALL SELECT 2601, 29.8169565217391, 196.324131516582
+	UNION ALL SELECT 601, 27.4356246246246, 210.338603998192
+	UNION ALL SELECT 11601, 16.250547112462, 126.490743190893
+	UNION ALL SELECT 14601, 18.7976419213974, 109.330817038102
+	UNION ALL SELECT 1601, 25.3745045045045, 199.992642929326
+	UNION ALL SELECT 17601, 33.8020921985816, 109.330817038102
+	UNION ALL SELECT 16601, 24.7010093457944, 109.330817038102
+	UNION ALL SELECT 90001, 16.6393103448276, 16.6393103448276
+	UNION ALL SELECT 90501, 16.5981943825234, 16.5981943825234
+	) a
+CREATE CLUSTERED INDEX idx_VC ON #VC (LocationNo)
+
+-- Loan Sample
+IF OBJECT_ID('tempdb..#LoanSample','U') IS NOT NULL DROP TABLE #LoanSample
+SELECT	a.LoanID
+	, a.CustomerID
+	, c.SSNEncrypted
+	, b.LocationID
+INTO	#LoanSample
+FROM	Loans a
+inner	join #Locations b on b.LocationID = a.OriginatingLocationID
+inner	join LoanApplications c on c.LoanApplicationID = a.LoanApplicationID
+WHERE	a.DisbursementDate between @Start and @End
+and	a.StatusID not in (11,12,14)
+and	a.LoanDisbursementStatus = 2
+and	(c.SSNEncrypted = '+81bN8a6KjIxmHooNxt3CujGF5SeRlhsaROEfnVTWVg=' or @SSN is null)
+CREATE UNIQUE CLUSTERED INDEX idx_LS ON #LoanSample (LoanID,CustomerID,SSNEncrypted,LocationID)
+
+-- Applications
+
+IF OBJECT_ID('tempdb..#Apl','U') IS NOT NULL DROP TABLE #Apl
+select	a.LoanApplicationID
+	, a.LoanID
+	, a.LoanNo
+	, a.OriginatingLocationID
+	, a.RefinancedLoanID
+	, a.CreateDate
+	, a.[Source]
+	, a.SSNEncrypted
+	, a.LoanAmount
+INTO	#Apl
+FROM	LoanApplications a
+inner	join #Locations b on b.LocationID = a.OriginatingLocationID
+
+
+CREATE UNIQUE CLUSTERED INDEX idx_Apl ON #Apl (LoanApplicationID,SSNEncrypted,CreateDate)
+
+IF OBJECT_ID('tempdb..#Apps','U') IS NOT NULL DROP TABLE #Apps
+SELECT	a.LoanApplicationID
+	, a.LoanID
+	, a.LoanNo
+	, a.RefinancedLoanID
+	, a.CreateDate
+	, a.[Source]
+	, a.SSNEncrypted
+	, a.LoanAmount
+INTO	#Apps
+FROM	#Apl a
+inner	join #Locations b on b.LocationID = a.OriginatingLocationID
+WHERE	exists	(
+		SELECT	1
+		FROM	#LoanSample a1
+		WHERE	a1.SSNEncrypted = a.SSNEncrypted
+		)
+CREATE UNIQUE CLUSTERED INDEX idx_APPS ON #Apps (LoanApplicationID,SSNEncrypted,CreateDate,LoanID)
+
+-- Applications Only, no loans disbursted
+
+IF OBJECT_ID('tempdb..#AppsOnly','U') IS NOT NULL DROP TABLE #AppsOnly
+SELECT	a.LoanApplicationID
+	, a.CreateDate
+	, a.[Source]
+	, a.SSNEncrypted
+	, a.LoanAmount
+INTO	#AppsOnly
+FROM	#Apl a
+WHERE	not exists	(
+		SELECT	1
+		FROM	#LoanSample a1
+		WHERE	a1.SSNEncrypted = a.SSNEncrypted
+		)
+	and a.CreateDate between @Start and @End
+CREATE UNIQUE CLUSTERED INDEX idx_APPSOnly ON #AppsOnly (LoanApplicationID,SSNEncrypted,CreateDate)
+
+-- Loans
+IF OBJECT_ID('tempdb..#Loans','U') IS NOT NULL DROP TABLE #Loans
+SELECT	*
+	, row_number() over(partition by a.SSNEncrypted, a.System order by a.DisbursementDate) [SystemNo]
+	, row_number() over(partition by a.SSNEncrypted order by a.DisbursementDate) [SeriesNo]
+	, datediff(d,lag(a.DisbursementDate) over(partition by a.SSNEncrypted order by a.DisbursementDate),a.DisbursementDate) [DaysSince]
+INTO	#Loans
+FROM	(
+	SELECT	a.LoanID
+		, a.LoanNo
+		, 'LMS' [System]
+		, a.LoanApplicationID
+		, a.OriginatingLocationID [LocationID]
+		, a.CustomerID
+		, c.SSNEncrypted
+		, c.createdate
+		, a.DisbursementDate
+		, e.Name[Source]
+		, CASE WHEN c.RefinancedLoanID is not null THEN 1 ELSE 0 END [Refinance] 
+		, a.IsPastDue
+		, a.PaidInFullDate
+		, a.StatusID
+		, a.MaturityDate
+	FROM	Loans a
+	inner	join #Locations b on b.LocationID = a.OriginatingLocationID
+	inner	join #Apps c on c.LoanApplicationID = a.LoanApplicationID
+	left	join #Apps d on d.SSNEncrypted = c.SSNEncrypted
+		and	c.Source != 3
+		and	c.CreateDate =	(
+					SELECT	max(d1.CreateDate)
+					FROM	#Apps d1
+					WHERE	d1.SSNEncrypted = c.SSNEncrypted
+					and	d1.CreateDate between dateadd(d,-30,c.CreateDate) and c.CreateDate
+					and	d1.Source = 3
+					)
+	inner	join LoanApplicationSources e on e.ID = isnull(d.Source,c.Source)
+	WHERE	a.StatusID not in (11,12,14)
+	and	a.LoanDisbursementStatus = 2
+	and	a.DisbursementDate <= @End
+	UNION ALL
+	SELECT	NULL [LoanID]
+		, a.LoanID [LoanNo]
+		, 'LEGACY' [System]
+		, NULL [LoanApplicationID]
+		, NULL [LocationID]
+		, NULL [CustomerID]
+		, a.SSNEncrypted
+		, rpt.ToUTC(a.FundDate) [CreateDate]
+		, rpt.ToUTC(a.FundDate) [DisbursementDate]
+		, 'CSR' [AppSource]
+		, NULL [Refinance]
+		, NULL [IsPastDue]
+		, NULL [PaidInFullDate]
+		, NULL [StatusID]
+		, NULL [MaturityDate]
+	FROM	LegacyCustomerCallLists a
+	) a
+WHERE	exists	(
+		SELECT	1
+		FROM	#LoanSample a1
+		WHERE	a1.SSNEncrypted = a.SSNEncrypted
+		)
+CREATE UNIQUE CLUSTERED INDEX idx_L ON #Loans (LoanID,LoanNo,[System],LoanApplicationID,LocationID,CustomerID,SSNEncrypted,DisbursementDate)
+
+-- Next fund date
+IF OBJECT_ID('tempdb..#NxtFndDt','U') IS NOT NULL DROP TABLE #NxtFndDt
+SELECT	a.LoanID
+	, lead(a.DisbursementDate) over(partition by a.SSNEncrypted order by a.SeriesNo) [NxtFndDt]
+INTO	#NxtFndDt
+FROM	#Loans a
+WHERE	a.System = 'LMS'
+CREATE UNIQUE CLUSTERED INDEX idx_NFD ON #NxtFndDt (LoanID,NxtFndDt)
+
+-- Refinance date
+IF OBJECT_ID('tempdb..#RefncDt','U') IS NOT NULL DROP TABLE #RefncDt
+SELECT	a.LoanID
+	, min(b.PostedDate) [RefncDt]
+INTO	#RefncDt
+FROM	#Loans a
+inner	join LoanTransactions b on b.LoanID = a.LoanID
+inner	join TransactionDetail c on c.TransactionDetailID = b.TransactionDetailID
+WHERE	c.NewRefinancedLoanID is not null
+GROUP BY
+	a.LoanID
+CREATE UNIQUE CLUSTERED INDEX idx_RFD ON #RefncDt (LoanID,RefncDt)
+
+-- Payments in window
+IF OBJECT_ID('tempdb..#PmtsInWndw','U') IS NOT NULL DROP TABLE #PmtsInWndw
+SELECT	a.LoanID
+	, sum(-b.AmountToInterest - b.AmountToPrincipal) [PmtsInWndw]
+
+INTO	#PmtsInWndw
+FROM	#Loans a
+inner	join LoanTransactions b on b.LoanID = a.LoanID
+inner	join TransactionTypes c on c.ID = b.TransactionTypeID
+left	join #NxtFndDt d on d.LoanID = a.LoanID
+WHERE	a.System = 'LMS'
+and	b.TransactionTypeID in (
+				2,11,14,16,17,19,34,44,45,47,49,50,51,54,6,7,8,9,10,13,21,22,24,25,26,35,36,42,53,57,58,59,60 -- performance payments
+				--,46,71,73 -- IncludeInTotalPaid
+				)
+and	b.PostedDate <= dateadd(d,@PmtWndwDays,a.DisbursementDate)
+and	(
+	-- no payments after the next loan starts
+	d.LoanID is null
+	or b.PostedDate <= d.NxtFndDt
+	)
+and not exists	(
+		-- No refinance payments or payments after
+		SELECT	1
+		FROM	#RefncDt b1
+		WHERE	b1.LoanID = a.LoanID
+		and	b.PostedDate >= b1.RefncDt
+		)
+GROUP BY
+	a.LoanID
+CREATE UNIQUE CLUSTERED INDEX idx_PMTs ON #PmtsInWndw (LoanID)
+
+IF OBJECT_ID('tempdb..#Billdays','U') IS NOT NULL DROP TABLE #Billdays
+SELECT	DISTINCT -- schedule payments due on the same date will add together creating WHAT LOOKS like a duplicate.
+	*
+INTO	#Billdays
+FROM	(
+	SELECT	a.[LoanID.A] [LoanID]
+		, sum(a.NotMade) over(partition by a.[LoanID.A] order by a.DateScheduled DESC) [RunNotMade]
+		, sum(a.BillDays) over(partition by a.[LoanID.A] order by a.DateScheduled DESC) [RunBillDays]
+	FROM	(
+		SELECT	a.SSNEncrypted
+			, a.LoanID [LoanID.A]
+			, c.LoanID [LoanID.B]
+			, row_number() over(partition by a.LoanID, c.LoanID order by d.DateScheduled DESC) [PmtNo]
+			, d.DateScheduled
+			, d.DateMade
+			, d.Amount
+			, CASE
+				WHEN d.DateMade is null THEN 1
+				WHEN d.DateMade > DateScheduled THEN 1
+				ELSE 0
+				END [NotMade]
+			, datediff(d,isnull(lag(d.DateScheduled) over(partition by a.LoanID, c.LoanID order by d.DateScheduled),c.DisbursementDate),d.DateScheduled) [BillDays]
+		FROM	#Loans a
+		inner	join LoanApplications b on b.SSNEncrypted = a.SSNEncrypted
+		inner	join Loans c on c.LoanID = b.LoanID
+			and	c.StatusID not in (11,12,14)
+			and	c.LoanDisbursementStatus = 2
+			and	c.DisbursementDate < a.DisbursementDate
+		inner	join ScheduledPayments d on d.LoanID = c.LoanID
+		WHERE	d.DateScheduled <= c.PaidInFullDate
+		) a
+	) a
+WHERE	a.RunBillDays <= @DaysOfPmts + 45
+CREATE NONCLUSTERED INDEX idx_ON ON #Billdays (LoanID)
+
+-- On-Time in Bill Day Window
+IF OBJECT_ID('tempdb..#OnTime','U') IS NOT NULL DROP TABLE #OnTime
+SELECT	a.LoanID
+	, a.RunNotMade [NotMade]
+	, a.RunBillDays [BillDays]
+INTO	#OnTime
+FROM	#Billdays a
+WHERE	a.RunBillDays =	(
+			SELECT	min(a1.RunBillDays)
+			FROM	#Billdays a1
+			WHERE	a1.LoanID = a.LoanID
+			and	a1.RunBillDays >= @DaysOfPmts
+			)
+CREATE UNIQUE CLUSTERED INDEX idx_ON ON #OnTime (LoanID)
+
+-- Customer-Type History Table
+IF OBJECT_ID('tempdb..#CustTypeHistory','U') IS NOT NULL DROP TABLE #CustTypeHistory
+SELECT	a.SSNEncrypted
+	, dense_rank() over(order by a.SSNEncrypted) [CustNo]
+	, ROW_NUMBER() over(order by a.SSNEncrypted, a.SystemNo) [RowNo]
+	, a.SeriesNo
+	, a.SystemNo
+	, a.LoanApplicationID
+	, a.LoanID
+	, a.LoanNo
+	, a.[Source]
+	, f.BillDays
+	, a.DaysSince
+	, a.CreateDate
+	, a.DisbursementDate
+	, a.PaidInFullDate
+	, a.MaturityDate
+	, a.StatusID
+	, a.Refinance
+	, CASE 
+		WHEN lead(a.Refinance) over(partition by a.SSNEncrypted order by a.SystemNo) = 1 THEN 0
+		WHEN lead(b.CreateDate) over(partition by a.SSNEncrypted order by a.SystemNo) between a.DisbursementDate and a.PaidInFullDate THEN 1 -- historical
+		WHEN lead(b.CreateDate) over(partition by a.SSNEncrypted order by a.SystemNo) >= a.DisbursementDate and a.PaidInFullDate is null THEN 1 -- future
+		WHEN a.PaidInFullDate < dateadd(d,@PmtWndwDays,a.DisbursementDate) and a.PaidInFullDate < a.MaturityDate THEN 1
+		WHEN a.PaidInFullDate is null and datediff(d,a.DisbursementDate,@End) < 280 THEN 1
+		ELSE 0
+		END [EarlyOrActive]
+	, CASE	
+		WHEN f.LoanID is null THEN 0
+		WHEN f.NotMade = 0 THEN 1
+		ELSE 0
+		END [DaysOfPmtsPerf]
+	, CASE
+		WHEN a.DaysSince <= 1825 THEN 'Existing'
+		ELSE 'New'
+		END [CustTypGrp]
+	, CASE
+		WHEN e.PmtsInWndw >= b.LoanAmount + CASE a.Source WHEN 'Online Lead' THEN d.LeadVC ELSE d.OrganicVC END THEN 1
+		ELSE -1
+		END [PerfType]
+INTO	#CustTypeHistory
+FROM	#Loans a
+inner	join #Apps b on b.LoanApplicationID = a.LoanApplicationID
+inner	join #Locations c on c.LocationID = a.LocationID
+inner	join #VC d on d.LocationNo = c.LocNo
+left	join #PmtsInWndw e on e.LoanID = a.LoanID
+left	join #OnTime f on f.LoanID = a.LoanID
+WHERE	a.System = 'LMS'
+ORDER BY
+	a.SSNEncrypted
+	, a.SystemNo
+CREATE UNIQUE CLUSTERED INDEX idx_CTH ON #CustTypeHistory (LoanID)
+
+-- Determine Customer Types
+
+IF OBJECT_ID('tempdb..#LoanCustomerType','U') IS NOT NULL DROP TABLE #LoanCustomerType
+
+DECLARE @CurRowNo bigint = 1
+DECLARE @EndRowNo bigint = (SELECT max(a.RowNo) FROM #CustTypeHistory a)
+
+;WITH CTE_CustTypeCAL AS
+	(
+	SELECT	1 [UpNo]
+		, a.RowNo
+		, a.CustNo
+		, a.SSNEncrypted
+		, a.LoanApplicationID
+		, a.LoanID
+		, a.LoanNo
+		, a.SeriesNo
+		, a.StatusID
+		, a.CreateDate
+		, a.[Source]
+		, a.BillDays
+		, a.DaysSince
+		, a.Refinance
+		, a.EarlyOrActive
+		, a.DaysOfPmtsPerf
+		--, a.IsPastDue
+		, a.CustTypGrp
+		, a.SystemNo
+		, a.PerfType
+		, a.CustTypGrp [CustTyp.New]
+	FROM	#CustTypeHistory a
+	WHERE	a.RowNo = 1
+	UNION ALL
+	SELECT	a.UpNo + 1 [UpNo]
+		, b.RowNo
+		, b.CustNo
+		, b.SSNEncrypted
+		, b.LoanApplicationID
+		, b.LoanID
+		, b.LoanNo
+		, b.SeriesNo
+		, b.StatusID
+		, b.CreateDate
+		, b.[Source]
+		, b.BillDays
+		, b.DaysSince
+		, b.Refinance
+		, b.EarlyOrActive
+		, b.DaysOfPmtsPerf
+		--, b.IsPastDue
+		, b.CustTypGrp
+		, b.SystemNo
+		, b.PerfType
+		, CASE
+			WHEN b.SystemNo = 1 THEN b.CustTypGrp -- first time in system, use CustTypGrp
+			WHEN b.CustTypGrp = 'New' THEN 'New' -- if CustTypGrp = New then it can't be anything else
+			WHEN a.PerfType = 1 THEN 'Existing' -- if prior loan perfromed and CustTypGrp isn't new then existing
+			WHEN 1 not in (b.Refinance,a.EarlyOrActive) and a.PerfType = -1 THEN 'Subprime'
+			WHEN a.[CustTyp.New] = 'Existing' THEN 'Existing'
+			WHEN b.DaysOfPmtsPerf = 1 THEN 'Existing'
+			WHEN a.[CustTyp.New] = 'New' THEN 'New'
+			WHEN a.[CustTyp.New] = 'Subprime' THEN 'Subprime'
+			END [CustTyp.New]
+
+	FROM	CTE_CustTypeCAL a
+	inner	join #CustTypeHistory b on b.RowNo = a.UpNo + 1
+	WHERE	a.UpNo <= @EndRowNo
+	)
+
+SELECT	a.*
+into #LoanCustomerType
+FROM	CTE_CustTypeCAL a
+inner	join #LoanSample b on b.LoanID = a.LoanID
+OPTION (maxrecursion 0)
+CREATE UNIQUE CLUSTERED INDEX idx_LCT ON #LoanCustomerType (SSNEncrypted,LoanApplicationID,CreateDate)
+
+Select SSNEncrypted
+	, LoanApplicationID
+	, LoanID
+	, LoanNo
+	, CreateDate
+	, [Source]
+	, CustNo
+	, CustTypGrp
+	, [CustTyp.New]
+from #LoanCustomerType 
+
+Union All
+
+Select a.SSNEncrypted
+	, a.LoanApplicationID
+	, NUll [LoanID]
+	, NULL [LoanNo]
+	, a.CreateDate
+	, (Case when d.[Name] = 'Online Lead' then 'Online Lead'
+		else c.[Name]
+		end)[Source]
+	, Null[CustNo]
+	, (case when datediff(day,b.CreateDate,a.CreateDate)<=1825 then 'Existing'
+		else 'New'
+		end)[CustTypGrp]
+	, (CASE
+		WHEN b.CustTypGrp = 'New' THEN 'Existing' -- if CustTypGrp = New then it can't be anything else
+		WHEN b.PerfType = 1 THEN 'Existing' -- if prior loan perfromed and CustTypGrp isn't new then existing
+		WHEN 1 not in (b.Refinance,b.EarlyOrActive) and b.PerfType = -1 THEN 'Subprime'
+		WHEN b.[CustTyp.New] = 'Existing' THEN 'Existing'
+		WHEN b.DaysOfPmtsPerf = 1 THEN 'Existing'
+		WHEN b.[CustTyp.New] = 'New' THEN 'Existing'
+		WHEN b.[CustTyp.New] = 'Subprime' THEN 'Subprime'
+		else 'New'
+		END) [CustTyp.New]
+from #AppsOnly a
+left	join #LoanCustomerType b on b.SSNEncrypted = a.SSNEncrypted
+		and	b.CreateDate =	(
+					SELECT	max(b1.CreateDate)
+					FROM	#LoanCustomerType b1
+					WHERE	b1.SSNEncrypted = b.SSNEncrypted
+					and	b1.CreateDate between dateadd(d,-30,a.CreateDate) and a.CreateDate
+					)
+left	join LoanApplicationSources c on c.ID = a. Source
+left	join LoanApplicationSources d on d.ID = b. Source
+
+	 
+DROP TABLE 
+	#Apps
+	, #Apl
+	, #AppsOnly
+	, #CustTypeHistory
+	, #Loans
+	, #LoanSample
+	, #Locations
+	, #OnTime
+	, #PmtsInWndw
+	, #Billdays
+	, #VC
+	, #LoanCustomerType
