@@ -1,0 +1,62 @@
+/***yours***/
+DECLARE @Start datetime = rpt.ToUTC('2020-09-01')
+DECLARE @End_Funded datetime = rpt.ToUTC(DATEADD(day,33,@Start))
+DECLARE @End_LeadSeen datetime = rpt.ToUTC(EOMONTH(@Start))
+
+SELECT	'@Start' [Variable]
+	, @Start [UTC Value] 
+	, rpt.ToCST(@Start) [CST Value]
+UNION ALL
+SELECT	'@End_Funded' [Variable]
+	, @End_Funded [UTC Value] 
+	, rpt.ToCST(@End_Funded) [CST Value]
+UNION ALL
+SELECT	'@End_LeadSeen' [Variable]
+	, @End_LeadSeen [UTC Value] 
+	, rpt.ToCST(@End_LeadSeen) [CST Value]
+
+/***fix time ending at 5 AM***/
+SET	@Start = '2020-09-01'
+SET	@End_Funded = rpt.ToUTC(DATEADD(day,33,@Start))
+SET	@End_LeadSeen = rpt.ToUTC(EOMONTH(@Start))
+SET	@Start = rpt.ToUTC(@Start)
+
+SELECT	'@Start' [Variable]
+	, @Start [UTC Value] 
+	, rpt.ToCST(@Start) [CST Value]
+UNION ALL
+SELECT	'@End_Funded' [Variable]
+	, @End_Funded [UTC Value] 
+	, rpt.ToCST(@End_Funded) [CST Value]
+UNION ALL
+SELECT	'@End_LeadSeen' [Variable]
+	, @End_LeadSeen [UTC Value] 
+	, rpt.ToCST(@End_LeadSeen) [CST Value]
+
+/***we need to include the whole day of the last day if we use between or <=***/
+SET	@Start = '2020-09-01'
+SET	@End_Funded = rpt.ToUTC(DATEADD(ms,-3,DATEADD(day,34,@Start)))
+SET	@End_LeadSeen = rpt.ToUTC(DATEADD(ms,-3,DATEADD(m,DATEDIFF(m,0,@Start) + 1,0)))
+SET	@Start = rpt.ToUTC(@Start)
+
+SELECT	'@Start' [Variable]
+	, @Start [UTC Value] 
+	, rpt.ToCST(@Start) [CST Value]
+UNION ALL
+SELECT	'@End_Funded' [Variable]
+	, @End_Funded [UTC Value] 
+	, rpt.ToCST(@End_Funded) [CST Value]
+UNION ALL
+SELECT	'@End_LeadSeen' [Variable]
+	, @End_LeadSeen [UTC Value] 
+	, rpt.ToCST(@End_LeadSeen) [CST Value]
+
+
+
+
+------------------------------------------------------------
+-- Bella's method for specific date
+DECLARE @ReportDate datetime = rpt.ToUTC(concat(convert(varchar, getdate()-1, 23), ' 23:59:59:997'))
+
+-- Sam's method for n days ago
+DECLARE @Start datetime = rpt.ToUTC(convert(date,dateadd(d,-545,rpt.ToCST(GETUTCDATE()))))
