@@ -1,4 +1,4 @@
--- create loans table
+-- create loans w/ cust detail table (no 50/50 or LendFirm)
 IF OBJECT_ID('tempdb..#Loans','U') IS NOT NULL DROP TABLE #Loans
 SELECT	a.LoanID
 	, ROW_NUMBER() OVER(PARTITION BY b.SSNEncrypted, c.Number ORDER BY a.DisbursementDate DESC) [LnSeqNo]
@@ -16,4 +16,19 @@ WHERE	a.StatusID not in (11,12,14)
 and	a.LoanDisbursementStatus = 2
 and	d.TenantID not in ('F37B2BFB-6E39-4950-A800-53CDFDCD91C4')  -- 50/50, LendFirm
 CREATE UNIQUE CLUSTERED INDEX idx_1 ON #Loans (LoanID,LnSeqNo,LocNo,SSNEncrypted)
+
+-- location list
+IF OBJECT_ID('tempdb..#Locations','U') IS NOT NULL DROP TABLE #Locations
+SELECT	c.Name [Tenant]
+	, a.LocationID
+	, a.Number
+	, a.Name [Location]
+	, a.StateOfBusinessID
+INTO	#Locations
+FROM	Locations a
+inner	join Companies b on b.CompanyID = a.CompanyID
+inner	join Tenants c on c.TenantID = b.TenantID
+WHERE	c.TenantID in ('81C9D229-AE82-4264-AAE5-3617281F9733','A3A95638-F894-474B-9856-42F9A70D3BC4','8F336472-F93A-407D-ADB6-C2A2623B9621') --ACL,CBX,SPDY
+and	a.Name not like '%corp%'
+CREATE UNIQUE CLUSTERED INDEX idx_1 ON #Locations (LocationID)
 
