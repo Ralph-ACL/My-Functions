@@ -1,0 +1,19 @@
+-- create loans table
+IF OBJECT_ID('tempdb..#Loans','U') IS NOT NULL DROP TABLE #Loans
+SELECT	a.LoanID
+	, ROW_NUMBER() OVER(PARTITION BY b.SSNEncrypted, c.Number ORDER BY a.DisbursementDate DESC) [LnSeqNo]
+	, a.CustomerID
+	, c.Number [LocNo]
+	, CASE WHEN a.CurrentFees + a.CurrentInterest + a.CurrentPrincipal > 2 THEN 1 ELSE 0 END [Active]
+	, b.SSNEncrypted
+	, a.PaidInFullDate
+INTO	#Loans	
+FROM	Loans a
+inner	join Customers b on b.CustomerID = a.CustomerID
+inner	join Locations c on c.LocationID = a.OriginatingLocationID
+inner	join Companies d on d.CompanyID = c.CompanyID
+WHERE	a.StatusID not in (11,12,14)
+and	a.LoanDisbursementStatus = 2
+and	d.TenantID not in ('F37B2BFB-6E39-4950-A800-53CDFDCD91C4')  -- 50/50, LendFirm
+CREATE UNIQUE CLUSTERED INDEX idx_1 ON #Loans (LoanID,LnSeqNo,LocNo,SSNEncrypted)
+
