@@ -6,3 +6,6 @@ eval()
 
 # Concatenating strings
 'string1' + 'string2'
+
+# When pasting df to excel workbook
+df.to_records()
