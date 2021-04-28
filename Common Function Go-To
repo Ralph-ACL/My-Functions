@@ -1,3 +1,8 @@
 # Convert string to executable
 eval()
 
+# Concatenating with seperators
+''.join([])
+
+# Concatenating strings
+'string1' + 'string2'
