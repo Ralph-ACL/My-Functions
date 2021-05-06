@@ -22,7 +22,7 @@ def DatasetLoad(filepath,filename,target,index):
     
     return(df)
     
-def Metadata(df_input,AutoClass,nUniqLim):
+def metadata(df_input,AutoClass,nUniqLim):
     ColDtypes = []
     
     # Identify Datatype
