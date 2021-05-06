@@ -1,5 +1,5 @@
 # Load Datafile Including Headers
-def DatasetLoad(filepath,filename,target,index):
+def rg_DatasetLoad(filepath,filename,target,index):
     # Load data
     filepath = filepath
     filename = filename
@@ -22,7 +22,7 @@ def DatasetLoad(filepath,filename,target,index):
     
     return(df)
     
-def Metadata(df_input,AutoClass,nUniqLim):
+def rg_Metadata(df_input,AutoClass,nUniqLim):
     ColDtypes = []
     
     # Identify Datatype
@@ -67,7 +67,7 @@ def Metadata(df_input,AutoClass,nUniqLim):
     return(ColDtypes)
 
 # Remove Columns With Insignificant Data. Requires target to be at column position 0 and for Metadata to Refreshed Prior to Executing
-def JunkColumns(dfinput):
+def rg_JunkColumns(dfinput):
     df_full_metadata = Metadata(dfinput,False,0)
     dfinput = dfinput
     useless_cols = []
@@ -82,7 +82,7 @@ def JunkColumns(dfinput):
     return(dfinput)
 
 # Correlation Matrix 1
-def my_corrmat(df_input):
+def rg_CorrMatrix(df_input):
     sns.set_theme(style="white")
 
     # Compute the correlation matrix
@@ -107,7 +107,7 @@ def my_corrmat(df_input):
 # Correlation Matrix 2
     warnings.filterwarnings('ignore')
 
-    def corrdot(*args, **kwargs, df_input):
+    def rg_CorrDot(*args, **kwargs, df_input):
         corr_r = args[0].corr(args[1], 'pearson')
         corr_text = f"{corr_r:2.2f}".replace("0.", ".")
         ax = plt.gca()
